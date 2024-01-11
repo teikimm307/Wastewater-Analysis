@@ -52,7 +52,6 @@ filtered_feature_table <- feature_table %>%
 # create a modified filtered feature table that only contains rows with average intensity of 1 for working with sample sites
 modified_filtered_feature_table <- filtered_feature_table %>%
   filter(adjusted_average_intensities == 1)
-View(modified_filtered_feature_table)
 
 # function for adding .mzXML to mapfile  
 add_suffix <- function(x, column_name, ext) {
@@ -169,9 +168,9 @@ create_manhattan_plot <- function(data, retention_time_col_index, p_value_col_in
 plot_A <- create_manhattan_plot(combined_feature_table, 6, 28, "Manhattan Plot for Sample Time A")
 plot_B <- create_manhattan_plot(combined_feature_table, 6, 31, "Manhattan Plot for Sample Time B")
 plot_C <- create_manhattan_plot(combined_feature_table, 6, 34, "Manhattan Plot for Sample Time C")
-#print(plot_A)
-#print(plot_B)
-#print(plot_C)
+print(plot_A)
+print(plot_B)
+print(plot_C)
 
 # end of SECTION 2
 
@@ -195,7 +194,7 @@ plot_A_significant <- filter_by_p_value(combined_feature_table, 28)
 plot_B_significant <- filter_by_p_value(combined_feature_table, 31)
 plot_C_significant <- filter_by_p_value(combined_feature_table, 34)
 
-# order and sort function that will be used to filter the 20 chemicals with lowest p-values 
+# order and sort function that will be used to filter the 10 chemicals with lowest p-values 
 order_and_sort <- function(data, col_name, num) {
   data1 <- data.frame(data)
   data1_mod1 <- data1[order(data1[[col_name]]),]
@@ -203,10 +202,10 @@ order_and_sort <- function(data, col_name, num) {
   return(data1_mod2)
 }
 
-# Extract unique chemical_IDs from each table
-chemical_ids_A <- unique(plot_A_significant$chemical_ID)
-chemical_ids_B <- unique(plot_B_significant$chemical_ID)
-chemical_ids_C <- unique(plot_C_significant$chemical_ID)
+# Extract chemical_IDs from each table
+chemical_ids_A <- plot_A_significant$chemical_ID
+chemical_ids_B <- plot_B_significant$chemical_ID
+chemical_ids_C <- plot_C_significant$chemical_ID
 
 # Find intersection between A and B, B and C, A and C
 only_A = setdiff(chemical_ids_A, union(chemical_ids_B, chemical_ids_C))
@@ -227,16 +226,11 @@ check_for_ID <- function(data, chemical_id, vec) {
   data_filtered <- data1[data1[[chemical_id]] %in% vec, ]
   return(data_filtered)
 }
-remove_duplicates <- function(data, col) {
-  data1 <- data.frame(data)
-  data1_unique <- data1[!duplicated(data1[[col]]), ]
-  return(data1_unique)
-}
 
 # converting the data into data frames
-plot_A_significant_unique <- remove_duplicates(plot_A_significant, "chemical_ID")
-plot_B_significant_unique <- remove_duplicates(plot_B_significant, "chemical_ID")
-plot_C_significant_unique <- remove_duplicates(plot_C_significant, "chemical_ID")
+plot_A_significant_unique <- plot_A_significant
+plot_B_significant_unique <- plot_B_significant
+plot_C_significant_unique <- plot_C_significant
 only_A_df <- check_for_ID(plot_A_significant_unique, "chemical_ID", only_A)
 only_B_df <- check_for_ID(plot_B_significant_unique, "chemical_ID", only_B)
 only_C_df <- check_for_ID(plot_C_significant_unique, "chemical_ID", only_C)
@@ -246,7 +240,6 @@ intersection_AC_df <- check_for_ID(plot_C_significant_unique, "chemical_ID", int
 common_intersection_A_ABC_df <-  check_for_ID(plot_A_significant_unique, "chemical_ID", common_intersection_ABC)
 common_intersection_B_ABC_df <-  check_for_ID(plot_B_significant_unique, "chemical_ID", common_intersection_ABC)
 common_intersection_C_ABC_df <-  check_for_ID(plot_C_significant_unique, "chemical_ID", common_intersection_ABC)
-
 
 # extracting the top 10 chemicals for each sample site based on p-value
 only_A_df_2 <- order_and_sort(only_A_df, "PValue_A", 10)
@@ -286,6 +279,7 @@ intersect_C_ABC_top5 <- intersect_C_ABC %>%
 
 combined_df <- bind_rows(intersect_A_ABC_top5, intersect_B_ABC_top5, intersect_C_ABC_top5)
 
+
 # Create a list of these sets
 list_of_ids <- list(A = chemical_ids_A, B = chemical_ids_B, C = chemical_ids_C)
 
@@ -306,11 +300,11 @@ venn.plot <- venn.diagram(
 grid.newpage()
 grid.draw(venn.plot)
 
-write.csv(counters_df, "counters_df.csv", row.names = FALSE)
-write.csv(only_A_df_top10, "only_A_df_top10(off).csv", row.names = FALSE)
-write.csv(only_B_df_top10, "only_B_df_top10(off).csv", row.names = FALSE)
-write.csv(only_C_df_top10, "only_C_df_top10(off).csv", row.names = FALSE)
-write.csv(combined_df, "combined_df(off).csv", row.names = FALSE)
+#write.csv(counters_df, "counters_df.csv", row.names = FALSE)
+#write.csv(only_A_df_top10, "only_A_df_top10(off).csv", row.names = FALSE)
+#write.csv(only_B_df_top10, "only_B_df_top10(off2).csv", row.names = FALSE)
+#write.csv(only_C_df_top10, "only_C_df_top10(off).csv", row.names = FALSE)
+#write.csv(combined_df, "combined_df(off).csv", row.names = FALSE)
 
 
 

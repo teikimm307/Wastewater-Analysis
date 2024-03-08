@@ -70,7 +70,7 @@ get_columns_for_site <- function(mapfile, site_number) {
   return(file_names)
 }
 
-#  find the number of chemicals that are found at each site from 1 to 28 
+#  find the number of chemicals that were found at each site from 1 to 28 
 counters <- numeric(28)
 for(site in 1:28) {
   site_columns <- get_columns_for_site(mapfile2, site)
@@ -92,89 +92,175 @@ ggplot(counters_df, aes(x = Site, y = Count)) +
 
 # end of SECTION 1 
 
+
 # beginning of SECTION 2
 
 # function to filter out columns by sample time (A,B,C) and append ".mzXML" to columns 
+# Initial setup: Extracting sample time IDs
 id2_function <- function(x, type, ext) {
   x <- mapfile$File.Name[mapfile$Sample_time == type]
-  x <-paste0(x, ext)
+  x <- paste0(x, ext)
 }
 sample_time_A_ids <- id2_function(sample_time_A_ids, "A", ".mzXML")
 sample_time_B_ids <- id2_function(sample_time_B_ids, "B", ".mzXML")
 sample_time_C_ids <- id2_function(sample_time_C_ids, "C", ".mzXML")
 
-# find the index of the starting column
-start_col_index <- which(colnames(filtered_feature_table) == "R230705_CLU0002_C18neg_001.mzXML")
+# Find the index of the starting column
+start_col_index <- which(colnames(modified_filtered_feature_table) == "R230705_CLU0002_C18neg_001.mzXML")
 
-# create a new table with columns from the starting column onwards (easier to work with)
-new_feature_table <- filtered_feature_table[, start_col_index:ncol(filtered_feature_table)]
+# Create a new table with columns from the starting column onwards
+new_feature_table <- modified_filtered_feature_table[, start_col_index:ncol(modified_filtered_feature_table)]
 
-# regression analysis for the three different sample times 
-perform_regression <- function(row, ids) {
-  # replace 0s with 1s and log-transform
-  intensities <- log2(ifelse(row[ids] == 0, 1, row[ids]))
+# Regression analysis across sample times
+perform_regression <- function(row, sample_time_ids) {
+  # Create a numeric vector representing the sample times
+  # Assuming 'A' corresponds to 1, 'B' to 2, and 'C' to 3
+  sample_times <- rep(1:3, times = sapply(sample_time_ids, length))
+  intensities <- unlist(lapply(sample_time_ids, function(ids) row[ids]))
+  intensities <- log2(ifelse(intensities == 0, 1, intensities))
   
-  # prepare data for regression
-  data_for_regression <- data.frame(Intensity = intensities, SampleTime = 1:length(ids))
-  
-  # perform linear regression
+  # Prepare and perform the regression
+  data_for_regression <- data.frame(Intensity = intensities, SampleTime = sample_times)
   lm_model <- lm(Intensity ~ SampleTime, data = data_for_regression)
+  
+  # Extract and return the p-value for the linear trend
+  summary_lm_model <- summary(lm_model)
+  p_value_linear_trend <- coef(summary_lm_model)[2, "Pr(>|t|)"]
+  
+  return(p_value_linear_trend)
+}
+
+# Apply the regression to each row (feature)
+p_values_linear <- apply(new_feature_table, 1, perform_regression, sample_time_ids = list(sample_time_A_ids, sample_time_B_ids, sample_time_C_ids))
+results_df <- data.frame(P_Value_Linear_Trend = p_values_linear)
+results_df$mz_1 <- modified_filtered_feature_table$mz_1 #adding a column for mass to charge ratio
+results_df$time_1 <- modified_filtered_feature_table$time_1 #adding a column for retention time
+
+# Manhattan plot function
+create_manhattan_plot_sampletimes <- function(results_df) { #Manhattan plot in terms of sample time
+  plot_data <- data.frame(
+    FeatureID = 1:nrow(results_df),
+    p_values = -log10(results_df$P_Value_Linear_Trend)
+  )
+  
+  ggplot(plot_data, aes(x = FeatureID)) +
+    geom_point(aes(y = p_values, color = p_values > -log10(0.05))) +  
+    geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "blue") +
+    scale_color_manual(values = c('TRUE' = 'blue', 'FALSE' = 'red')) +
+    ggtitle("Manhattan Plot for Changes Across Sample Times") +
+    xlab("Feature ID") +
+    ylab("-log(p-value)") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+}
+
+create_manhattan_plot_mz <- function(results_df) { #Manhattan plot in terms of mass-to-charge
+  plot_data <- data.frame(
+    mz = results_df$mz_1,
+    p_values = -log10(results_df$P_Value_Linear_Trend)
+  )
+  
+  ggplot(plot_data, aes(x = mz, y = p_values)) +
+    geom_point(aes(color = p_values > -log10(0.05)), alpha = 0.4, size = 1.5) +
+    geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "blue") +
+    scale_color_manual(values = c('TRUE' = 'blue', 'FALSE' = 'red')) +
+    ggtitle("Manhattan Plot for Changes Across Mass-To-Charge Ratios") +
+    xlab("Mass-To-Charge Ratios") +
+    ylab("-log(p-value)") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+    theme(legend.position = "none")
+}
+
+create_manhattan_plot_rt <- function(results_df) { #Manhattan plot in terms of retention time
+  plot_data <- data.frame(
+    rt = results_df$time_1,
+    p_values = -log10(results_df$P_Value_Linear_Trend)
+  )
+  
+  ggplot(plot_data, aes(x = rt, y = p_values)) +
+    geom_point(aes(color = p_values > -log10(0.05)), alpha = 0.4, size = 1.5) +
+    geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "blue") +
+    scale_color_manual(values = c('TRUE' = 'blue', 'FALSE' = 'red')) +
+    ggtitle("Manhattan Plot for Changes Across Retention Times") +
+    xlab("Retention Times") +
+    ylab("-log(p-value)") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+    theme(legend.position = "none")
+}
+
+# Generate and display the Manhattan plots
+create_manhattan_plot_sampletimes(results_df)
+create_manhattan_plot_mz(results_df)
+create_manhattan_plot_rt(results_df)
+
+# End of SECTION 2
+
+
+
+
+#Beginning of SECTION 3
+incomes <- c(0,34490, 36812, 37059, 40168, 31050, 27752, 27517, 65791, 56672, 27517, 74500, 101140, 86478, 81994, 108021, 55433, 76796, 72401, 55346, 61923, 45794, 53857, 61081, 28054, 52751, 20000)
+population <- c(0, 8258, 3459, 1610, 3587, 10949, 9073, 23751, 145346, 8838, 23751, 95603, 11444, 40824, 5781, 37193, 78206, 60885, 24969, 309998, 45148, 37972, 23135, 309184, 41777, 350766, 74)
+area <- c(0.04, 4, 1, 1, 3, 5, 5, 12, 112, 3, 12, 80, 12, 67, 11, 88, 55, 80, 23, 332, 37, 28, 21, 242, 20, 280, 3)
+
+#creating the data table from the paper
+mod_counters_df <- counters_df[-6, ]
+mod_counters_df$Income <- incomes
+mod_counters_df$Population <- population
+mod_counters_df$Area <- area
+
+mod_perform_regression <- function(data, independent, dependent) {
+  formula <- as.formula(paste(dependent, "~", independent))
+  lm_model <- lm(formula, data = data)
   summary_model <- summary(lm_model)
   
-  # extract and return necessary values
-  c(
-    PValue = coef(summary(lm_model))["SampleTime", "Pr(>|t|)"],
-    AdjustedR2 = summary_model$adj.r.squared,
-    slope = coef(lm_model)["SampleTime"]  
-  )
-}
-
-# apply the linear regression function to each row for each sample time
-results_A <- t(apply(new_feature_table, 1, perform_regression, ids = sample_time_A_ids))
-results_B <- t(apply(new_feature_table, 1, perform_regression, ids = sample_time_B_ids))
-results_C <- t(apply(new_feature_table, 1, perform_regression, ids = sample_time_C_ids))
-
-# convert them into data frames 
-results_A_df <- as.data.frame(results_A)
-colnames(results_A_df) <- c("PValue_A", "AdjustedR2_A", "Slope_A")
-results_B_df <- as.data.frame(results_B)
-colnames(results_B_df) <- c("PValue_B", "AdjustedR2_B", "Slope_B")
-results_C_df <- as.data.frame(results_C)
-colnames(results_C_df) <- c("PValue_C", "AdjustedR2_C", "Slope_C")
-
-# the combined feature table contains information from the first 26 columns and the regression analysis for A,B, and C
-mod_feature_table <- filtered_feature_table[,c(1:26,ncol(filtered_feature_table))]
-combined_feature_table <- cbind(mod_feature_table, results_A_df, results_B_df, results_C_df)
-
-# Manhattan plot function 
-create_manhattan_plot <- function(data, retention_time_col_index, p_value_col_index, title) {
-  # create a new data frame specifically for plotting
-  plot_data <- data.frame(
-    retention_time = data[, retention_time_col_index],
-    p_values = -log10(data[, p_value_col_index])
-  )
+  # Extracting the coefficients table
+  coefficients_table <- summary_model$coefficients
   
-  # Create the Manhattan Plot using ggplot
-  ggplot(plot_data, aes(x = retention_time, y = p_values)) +
-    geom_point(aes(color = p_values > -log10(0.05))) +  # Plot points
-    geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "blue") + # Significance line at p-value = 0..05 
-    ggtitle(title) +
-    theme_minimal() +
-    labs(x = "Retention Time", y = "-log10(P-Value)") +
-    theme(text = element_text(family = "Times New Roman"), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=0.5), plot.title = element_text(hjust = 0.5))  # Rotate x-axis labels for better readability
+  # Adding R-squared and Adjusted R-squared
+  summary_model$R_squared <- summary_model$r.squared
+  summary_model$Adjusted_R_squared <- summary_model$adj.r.squared
+  
+  print(summary_model)
+  
+  # Renaming the 'Pr(>|t|)' column for clarity
+  colnames(coefficients_table)[4] <- "PValue"
+  
+  # Return the summary table with all the necessary statistics
+  return(coefficients_table)
 }
 
-# Call the create_manhattan_plot() function 
-plot_A <- create_manhattan_plot(combined_feature_table, 6, 28, "Manhattan Plot for Sample Time A")
-plot_B <- create_manhattan_plot(combined_feature_table, 6, 31, "Manhattan Plot for Sample Time B")
-plot_C <- create_manhattan_plot(combined_feature_table, 6, 34, "Manhattan Plot for Sample Time C")
-print(plot_A)
-print(plot_B)
-print(plot_C)
+plot_regression <- function(data, independent, dependent, model) {
+  # Create a scatter plot of the independent variable vs. the dependent variable
+  plot(data[[independent]], data[[dependent]], main = paste("Regression of", dependent, "on", independent),
+       xlab = independent, ylab = dependent, pch = 19)
+  
+  # Add the regression line
+  abline(model, col = "blue")
+}
 
-# end of SECTION 2
+income_results <- mod_perform_regression(mod_counters_df, "Income", "Count")
+population_results <- mod_perform_regression(mod_counters_df, "Population", "Count")
+area_results <- mod_perform_regression(mod_counters_df, "Area", "Count")
 
-#beginning of SECTION 3
+income_model <- lm(Count ~ Income, data = mod_counters_df)
+plot_regression(mod_counters_df, "Income", "Count", income_model)
+population_model <- lm(Count ~ Population, data = mod_counters_df)
+plot_regression(mod_counters_df, "Population", "Count", population_model)
+area_model <- lm(Count ~ Area, data = mod_counters_df)
+plot_regression(mod_counters_df, "Area", "Count", area_model)
+
+
+#End of SECTION 3
+
+
+
+
+
+
+#Beginning of SECTION 4
 
 # function to create tables containing rows with p-value less than 0.05 
 filter_by_p_value <- function(data, p_value_col_index) {
@@ -186,7 +272,7 @@ filter_by_p_value <- function(data, p_value_col_index) {
     filtered_data <- filtered_data[, -c(28:30, 34:36)]
   }
   else {
-  filtered_data <- filtered_data[, -c(28:33)]
+    filtered_data <- filtered_data[, -c(28:33)]
   }
   return(filtered_data)
 }
@@ -305,7 +391,6 @@ grid.draw(venn.plot)
 #write.csv(only_B_df_top10, "only_B_df_top10(off2).csv", row.names = FALSE)
 #write.csv(only_C_df_top10, "only_C_df_top10(off).csv", row.names = FALSE)
 #write.csv(combined_df, "combined_df(off).csv", row.names = FALSE)
-
 
 
 

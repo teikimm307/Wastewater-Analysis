@@ -144,7 +144,7 @@ create_manhattan_plot_sampletimes <- function(results_df) { #Manhattan plot in t
   )
   
   ggplot(plot_data, aes(x = FeatureID)) +
-    geom_point(aes(y = p_values, color = p_values > -log10(0.05))) +  
+    geom_point(aes(y = p_values, color = p_values > -log10(0.05)), alpha = 1) +  
     geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "blue") +
     scale_color_manual(values = c('TRUE' = 'blue', 'FALSE' = 'red')) +
     ggtitle("Manhattan Plot for Changes Across Sample Times") +
@@ -161,7 +161,7 @@ create_manhattan_plot_mz <- function(results_df) { #Manhattan plot in terms of m
   )
   
   ggplot(plot_data, aes(x = mz, y = p_values)) +
-    geom_point(aes(color = p_values > -log10(0.05)), alpha = 0.4, size = 1.5) +
+    geom_point(aes(color = p_values > -log10(0.05)), alpha = 1, size = 1.5) +
     geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "blue") +
     scale_color_manual(values = c('TRUE' = 'blue', 'FALSE' = 'red')) +
     ggtitle("Manhattan Plot for Changes Across Mass-To-Charge Ratios") +
@@ -179,7 +179,7 @@ create_manhattan_plot_rt <- function(results_df) { #Manhattan plot in terms of r
   )
   
   ggplot(plot_data, aes(x = rt, y = p_values)) +
-    geom_point(aes(color = p_values > -log10(0.05)), alpha = 0.4, size = 1.5) +
+    geom_point(aes(color = p_values > -log10(0.05)), alpha = 1, size = 1.5) +
     geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "blue") +
     scale_color_manual(values = c('TRUE' = 'blue', 'FALSE' = 'red')) +
     ggtitle("Manhattan Plot for Changes Across Retention Times") +
@@ -196,8 +196,6 @@ create_manhattan_plot_mz(results_df)
 create_manhattan_plot_rt(results_df)
 
 # End of SECTION 2
-
-
 
 
 #Beginning of SECTION 3
@@ -252,12 +250,31 @@ plot_regression(mod_counters_df, "Population", "Count", population_model)
 area_model <- lm(Count ~ Area, data = mod_counters_df)
 plot_regression(mod_counters_df, "Area", "Count", area_model)
 
+#Working with nested sewersheds vs. treatment plants
+count_sewer <- c(counters_df[1:5, "Count"], counters_df[7:14, "Count"], counters_df[16, "Count"], counters_df[18, "Count"], counters_df[20, "Count"], counters_df[22:26, "Count"], counters_df[28, "Count"])
+count_plant <- c(counters_df[15, "Count"], counters_df[17, "Count"], counters_df[19, "Count"], counters_df[21, "Count"], counters_df[27, "Count"])
+data_sample_sites <- data.frame(Group = rep(c("Sewershed", "WQTC"), c(length(count_sewer), length(count_plant))), Count = c(count_sewer, count_plant))
+ggplot(data_sample_sites, aes(x = Group, y = Count)) + 
+      geom_boxplot() + xlab("Group") + ylab("Count") + 
+      ggtitle("Boxplot of Number of Chemicals Found for Sewersheds and WQTC") +
+      theme(text = element_text(family = "Times New Roman"))
+
+t_test_result <- t.test(Count ~ Group, data = data_sample_sites)
+
+count_combined_overflow_yes <- c(counters_df[1:5, "Count"], counters_df[7:14, "Count"], counters_df[25:26, "Count"], counters_df[28, "Count"])
+count_combined_overflow_no <- c(counters_df[16, "Count"], counters_df[18, "Count"], counters_df[20, "Count"], counters_df[22:24, "Count"])
+data_combined_overflow <- data.frame(Group = rep(c("Combined Overflow", "No Combined Overflow"), c(length(count_combined_overflow_yes), length(count_combined_overflow_no))), Count = c(count_combined_overflow_yes, count_combined_overflow_no))
+ggplot(data_combined_overflow, aes(x = Group, y = Count)) + 
+  geom_boxplot() + xlab("Group") + ylab("Count") + 
+  ggtitle("Boxplot of Number of Chemicals Found for Sewersheds With and Without Combined Sewer Overflow") +
+  theme(text = element_text(family = "Times New Roman"))
+
+t_test_result_1 <- t.test(Count ~ Group, data = data_combined_overflow)
+
+print(t_test_result)
+print(t_test_result_1)
 
 #End of SECTION 3
-
-
-
-
 
 
 #Beginning of SECTION 4

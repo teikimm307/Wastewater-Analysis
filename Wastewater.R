@@ -72,12 +72,138 @@ get_columns_for_site <- function(mapfile, site_number) {
 
 #  find the number of chemicals that were found at each site from 1 to 28 
 counters <- numeric(28)
+site_data_frames <- list()
+
 for(site in 1:28) {
-  site_columns <- get_columns_for_site(mapfile2, site)
-  counters[site] <- sum(apply(modified_filtered_feature_table[site_columns], 1, function(row) {
-    any(row != 0)
-  }))
+  # Get the file names for the site using the existing function
+  site_files <- get_columns_for_site(mapfile2, site)
+  
+  # Determine the column names in modified_filtered_feature_table that match the site files
+  site_cols <- which(colnames(modified_filtered_feature_table) %in% site_files)
+  
+  # Apply a function across the rows to check for any non-zero values in the site's columns
+  # and sum these to count the number of non-zero rows for the site
+  counters[site] <- sum(apply(modified_filtered_feature_table[site_cols], 1, function(row) any(row != 0)))
+  
+  # Subset the data for rows where any column for the site has a non-zero value
+  site_data <- modified_filtered_feature_table[apply(modified_filtered_feature_table[site_cols], 1, function(row) any(row != 0)), ]
+  
+  # Store the subsetted data frame in the list with a name
+  site_data_frames[[paste0("found_site_", site)]] <- site_data
 }
+
+#BEGINNING OF SECTION INTERSECTION
+
+# Find the common chemical IDs between the two sites
+# BEGINNING OF Site 27
+common_rows_list <- list()
+
+# Loop through sites 1 to 4 (extend this range as needed)
+for(site in 1:5) {
+  # Calculate the intersecting chemical IDs between the current site and site 27
+  common_chemical_ids <- intersect(site_data_frames[[paste0("found_site_", site)]][["chemical_ID"]],
+                                   site_data_frames[["found_site_27"]][["chemical_ID"]])
+  
+  # Subset the site 27 data frame for rows with the common chemical IDs
+  common_rows <- site_data_frames[["found_site_27"]][site_data_frames[["found_site_27"]][["chemical_ID"]] %in% common_chemical_ids, ]
+  
+  # Store the result in the list using the site number as the name
+  common_rows_list[[paste0("site_", site, "_and_27")]] <- common_rows
+}
+
+for(site in 7:14) {
+  # Calculate the intersecting chemical IDs between the current site and site 27
+  common_chemical_ids <- intersect(site_data_frames[[paste0("found_site_", site)]][["chemical_ID"]],
+                                   site_data_frames[["found_site_27"]][["chemical_ID"]])
+  
+  # Subset the site 27 data frame for rows with the common chemical IDs
+  common_rows <- site_data_frames[["found_site_27"]][site_data_frames[["found_site_27"]][["chemical_ID"]] %in% common_chemical_ids, ]
+  
+  # Store the result in the list using the site number as the name
+  common_rows_list[[paste0("site_", site, "_and_27")]] <- common_rows
+}
+
+for(site in 25:26) {
+  # Calculate the intersecting chemical IDs between the current site and site 27
+  common_chemical_ids <- intersect(site_data_frames[[paste0("found_site_", site)]][["chemical_ID"]],
+                                   site_data_frames[["found_site_27"]][["chemical_ID"]])
+  
+  # Subset the site 27 data frame for rows with the common chemical IDs
+  common_rows <- site_data_frames[["found_site_27"]][site_data_frames[["found_site_27"]][["chemical_ID"]] %in% common_chemical_ids, ]
+  
+  # Store the result in the list using the site number as the name
+  common_rows_list[[paste0("site_", site, "_and_27")]] <- common_rows
+}
+
+for(site in 28) {
+  # Calculate the intersecting chemical IDs between the current site and site 27
+  common_chemical_ids <- intersect(site_data_frames[[paste0("found_site_", site)]][["chemical_ID"]],
+                                   site_data_frames[["found_site_27"]][["chemical_ID"]])
+  
+  # Subset the site 27 data frame for rows with the common chemical IDs
+  common_rows <- site_data_frames[["found_site_27"]][site_data_frames[["found_site_27"]][["chemical_ID"]] %in% common_chemical_ids, ]
+  
+  # Store the result in the list using the site number as the name
+  common_rows_list[[paste0("site_", site, "_and_27")]] <- common_rows
+}
+# END OF Site 27
+
+# BEGINNING OF Site 15
+
+for(site in 16) {
+  # Calculate the intersecting chemical IDs between the current site and site 16
+  common_chemical_ids <- intersect(site_data_frames[[paste0("found_site_", site)]][["chemical_ID"]],
+                                   site_data_frames[["found_site_15"]][["chemical_ID"]])
+  
+  # Subset the site 15 data frame for rows with the common chemical IDs
+  common_rows <- site_data_frames[["found_site_15"]][site_data_frames[["found_site_15"]][["chemical_ID"]] %in% common_chemical_ids, ]
+  
+  # Store the result in the list using the site number as the name
+  common_rows_list[[paste0("site_", site, "_and_15")]] <- common_rows
+}
+#END OF Site 15
+
+
+#BEGINNING OF Site 21
+for(site in 18) {
+  # Calculate the intersecting chemical IDs between the current site and site 21
+  common_chemical_ids <- intersect(site_data_frames[[paste0("found_site_", site)]][["chemical_ID"]],
+                                   site_data_frames[["found_site_21"]][["chemical_ID"]])
+  
+  # Subset the site 21 data frame for rows with the common chemical IDs
+  common_rows <- site_data_frames[["found_site_21"]][site_data_frames[["found_site_21"]][["chemical_ID"]] %in% common_chemical_ids, ]
+  
+  # Store the result in the list using the site number as the name
+  common_rows_list[[paste0("site_", site, "_and_21")]] <- common_rows
+}
+
+for(site in 20) {
+  # Calculate the intersecting chemical IDs between the current site and site 21
+  common_chemical_ids <- intersect(site_data_frames[[paste0("found_site_", site)]][["chemical_ID"]],
+                                   site_data_frames[["found_site_21"]][["chemical_ID"]])
+  
+  # Subset the site 21 data frame for rows with the common chemical IDs
+  common_rows <- site_data_frames[["found_site_21"]][site_data_frames[["found_site_21"]][["chemical_ID"]] %in% common_chemical_ids, ]
+  
+  # Store the result in the list using the site number as the name
+  common_rows_list[[paste0("site_", site, "_and_21")]] <- common_rows
+}
+
+for(site in 22:24) {
+  # Calculate the intersecting chemical IDs between the current site and site 21
+  common_chemical_ids <- intersect(site_data_frames[[paste0("found_site_", site)]][["chemical_ID"]],
+                                   site_data_frames[["found_site_21"]][["chemical_ID"]])
+  
+  # Subset the site 21 data frame for rows with the common chemical IDs
+  common_rows <- site_data_frames[["found_site_21"]][site_data_frames[["found_site_21"]][["chemical_ID"]] %in% common_chemical_ids, ]
+  
+  # Store the result in the list using the site number as the name
+  common_rows_list[[paste0("site_", site, "_and_21")]] <- common_rows
+}
+
+# END OF SECTION INTERSECTION
+
+
 
 # table containing the site number and corresponding number of chemical compounds 
 counters_df <- data.frame(Site = 1:28, Count = counters)
@@ -89,6 +215,37 @@ ggplot(counters_df, aes(x = Site, y = Count)) +
   labs(title = "Number of Chemicals Detected At Each Site", x = "Site Number", y = "Count") +
   theme(text = element_text(family = "Times New Roman"), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=0.5), plot.title = element_text(hjust = 0.5)) +
   scale_x_continuous(breaks = seq(0, 30, by=5), limits = c(0,30))
+
+
+#modified bar graph that groups bars together based on what site they converge to
+site_order <- c(
+  as.character(1:5), as.character(7:14), as.character(25:26), "28", "27", # Group 1 with 27 last
+  "16", "15",                                                             # Group 2 with 15 last
+  "20", as.character(22:24), "21", "6"                                    # Group 3 with 21 last
+)
+
+# Set the levels of the Site factor according to the custom order
+counters_df$Site <- factor(counters_df$Site, levels = site_order)
+
+counters_df$Group <- ifelse(counters_df$Site %in% c(1:5, 7:14, 25:26, 28, 27), "Group 1",
+                            ifelse(counters_df$Site %in% c(15,16), "Group 2",
+                                   ifelse(counters_df$Site %in% c(20, 22:24, 21), "Group 3", NA)))
+
+# Define a new column for color (factor variable for differentiating specific bars)
+counters_df$Color <- ifelse(counters_df$Site == 27, "Special",
+                            ifelse(counters_df$Site == 15, "Special",
+                                   ifelse(counters_df$Site == 21, "Special", "Standard")))
+
+# Plotting the bar graph
+ggplot(counters_df, aes(x = Group, y = Count, fill = Color, group = Site)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.45), width = 0.37) +
+  theme_minimal() +
+  labs(title = "Number of Chemicals Detected At Sites Compared to Their Corresponding WQTC", x = "Group", y = "Count") +
+  theme(text = element_text(family = "Times New Roman"),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=0.5),
+        plot.title = element_text(hjust = 0.5)) +
+  scale_fill_manual(values = c("Standard" = "blue", "Special" = "orange")) +
+  scale_x_discrete(limits = c("Group 1", "Group 2", "Group 3"))
 
 # end of SECTION 1 
 
@@ -106,10 +263,10 @@ sample_time_B_ids <- id2_function(sample_time_B_ids, "B", ".mzXML")
 sample_time_C_ids <- id2_function(sample_time_C_ids, "C", ".mzXML")
 
 # Find the index of the starting column
-start_col_index <- which(colnames(modified_filtered_feature_table) == "R230705_CLU0002_C18neg_001.mzXML")
+start_col_index <- which(colnames(filtered_feature_table) == "R230705_CLU0002_C18neg_001.mzXML")
 
 # Create a new table with columns from the starting column onwards
-new_feature_table <- modified_filtered_feature_table[, start_col_index:ncol(modified_filtered_feature_table)]
+new_feature_table <- filtered_feature_table[, start_col_index:ncol(filtered_feature_table)]
 
 # Regression analysis across sample times
 perform_regression <- function(row, sample_time_ids) {
@@ -133,11 +290,11 @@ perform_regression <- function(row, sample_time_ids) {
 # Apply the regression to each row (feature)
 p_values_linear <- apply(new_feature_table, 1, perform_regression, sample_time_ids = list(sample_time_A_ids, sample_time_B_ids, sample_time_C_ids))
 results_df <- data.frame(P_Value_Linear_Trend = p_values_linear)
-results_df$mz_1 <- modified_filtered_feature_table$mz_1 #adding a column for mass to charge ratio
-results_df$time_1 <- modified_filtered_feature_table$time_1 #adding a column for retention time
+results_df$mz_1 <- filtered_feature_table$mz_1 #adding a column for mass to charge ratio
+results_df$time_1 <- filtered_feature_table$time_1 #adding a column for retention time
 
-# Manhattan plot function
-create_manhattan_plot_sampletimes <- function(results_df) { #Manhattan plot in terms of sample time
+# Manhattan plot functions
+create_manhattan_plot_feature_id <- function(results_df) { #Manhattan plot in terms of Feature ID's 
   plot_data <- data.frame(
     FeatureID = 1:nrow(results_df),
     p_values = -log10(results_df$P_Value_Linear_Trend)
@@ -147,10 +304,10 @@ create_manhattan_plot_sampletimes <- function(results_df) { #Manhattan plot in t
     geom_point(aes(y = p_values, color = p_values > -log10(0.05)), alpha = 1) +  
     geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "blue") +
     scale_color_manual(values = c('TRUE' = 'blue', 'FALSE' = 'red')) +
-    ggtitle("Manhattan Plot for Changes Across Sample Times") +
+    ggtitle("Manhattan Plot for Changes Across Feature ID's") +
     xlab("Feature ID") +
     ylab("-log(p-value)") +
-    theme_minimal() +
+    theme(text = element_text(family = "Times New Roman"), plot.title = element_text(hjust=0.5)) +
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 }
 
@@ -167,7 +324,7 @@ create_manhattan_plot_mz <- function(results_df) { #Manhattan plot in terms of m
     ggtitle("Manhattan Plot for Changes Across Mass-To-Charge Ratios") +
     xlab("Mass-To-Charge Ratios") +
     ylab("-log(p-value)") +
-    theme_minimal() +
+    theme(text = element_text(family = "Times New Roman"), plot.title = element_text(hjust=0.5)) +
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
     theme(legend.position = "none")
 }
@@ -185,13 +342,13 @@ create_manhattan_plot_rt <- function(results_df) { #Manhattan plot in terms of r
     ggtitle("Manhattan Plot for Changes Across Retention Times") +
     xlab("Retention Times") +
     ylab("-log(p-value)") +
-    theme_minimal() +
+    theme(text = element_text(family = "Times New Roman"), plot.title = element_text(hjust=0.5)) +
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
     theme(legend.position = "none")
 }
 
 # Generate and display the Manhattan plots
-create_manhattan_plot_sampletimes(results_df)
+create_manhattan_plot_feature_id(results_df)
 create_manhattan_plot_mz(results_df)
 create_manhattan_plot_rt(results_df)
 
@@ -199,6 +356,7 @@ create_manhattan_plot_rt(results_df)
 
 
 #Beginning of SECTION 3
+#PART 1: SCATTERPLOTS FOR INCOME, POPULATION, AND AREA
 incomes <- c(0,34490, 36812, 37059, 40168, 31050, 27752, 27517, 65791, 56672, 27517, 74500, 101140, 86478, 81994, 108021, 55433, 76796, 72401, 55346, 61923, 45794, 53857, 61081, 28054, 52751, 20000)
 population <- c(0, 8258, 3459, 1610, 3587, 10949, 9073, 23751, 145346, 8838, 23751, 95603, 11444, 40824, 5781, 37193, 78206, 60885, 24969, 309998, 45148, 37972, 23135, 309184, 41777, 350766, 74)
 area <- c(0.04, 4, 1, 1, 3, 5, 5, 12, 112, 3, 12, 80, 12, 67, 11, 88, 55, 80, 23, 332, 37, 28, 21, 242, 20, 280, 3)
@@ -226,6 +384,9 @@ mod_perform_regression <- function(data, independent, dependent) {
   # Renaming the 'Pr(>|t|)' column for clarity
   colnames(coefficients_table)[4] <- "PValue"
   
+  conf_intervals <- confint(lm_model, level = 0.95)
+  print(conf_intervals)
+  
   # Return the summary table with all the necessary statistics
   return(coefficients_table)
 }
@@ -250,14 +411,17 @@ plot_regression(mod_counters_df, "Population", "Count", population_model)
 area_model <- lm(Count ~ Area, data = mod_counters_df)
 plot_regression(mod_counters_df, "Area", "Count", area_model)
 
+#PART 2: BOXPLOTS
+
 #Working with nested sewersheds vs. treatment plants
 count_sewer <- c(counters_df[1:5, "Count"], counters_df[7:14, "Count"], counters_df[16, "Count"], counters_df[18, "Count"], counters_df[20, "Count"], counters_df[22:26, "Count"], counters_df[28, "Count"])
 count_plant <- c(counters_df[15, "Count"], counters_df[17, "Count"], counters_df[19, "Count"], counters_df[21, "Count"], counters_df[27, "Count"])
 data_sample_sites <- data.frame(Group = rep(c("Sewershed", "WQTC"), c(length(count_sewer), length(count_plant))), Count = c(count_sewer, count_plant))
 ggplot(data_sample_sites, aes(x = Group, y = Count)) + 
-      geom_boxplot() + xlab("Group") + ylab("Count") + 
-      ggtitle("Boxplot of Number of Chemicals Found for Sewersheds and WQTC") +
-      theme(text = element_text(family = "Times New Roman"))
+  geom_boxplot() + xlab("Group") + ylab("Count") + 
+  geom_jitter(width = 0, alpha = 0.5, color = "blue") +
+  ggtitle("Chemicals Found in Sewersheds and WQTC") +
+  theme(text = element_text(family = "Times New Roman"), plot.title = element_text(hjust=0.5))
 
 t_test_result <- t.test(Count ~ Group, data = data_sample_sites)
 
@@ -266,8 +430,9 @@ count_combined_overflow_no <- c(counters_df[16, "Count"], counters_df[18, "Count
 data_combined_overflow <- data.frame(Group = rep(c("Combined Overflow", "No Combined Overflow"), c(length(count_combined_overflow_yes), length(count_combined_overflow_no))), Count = c(count_combined_overflow_yes, count_combined_overflow_no))
 ggplot(data_combined_overflow, aes(x = Group, y = Count)) + 
   geom_boxplot() + xlab("Group") + ylab("Count") + 
-  ggtitle("Boxplot of Number of Chemicals Found for Sewersheds With and Without Combined Sewer Overflow") +
-  theme(text = element_text(family = "Times New Roman"))
+  geom_jitter(width = 0, alpha = 0.5, color = "blue") +
+  ggtitle("Chemicals Found in Sewersheds With/Without Combined Sewer Overflow") +
+  theme(text = element_text(family = "Times New Roman"), plot.title = element_text(hjust=0.5))
 
 t_test_result_1 <- t.test(Count ~ Group, data = data_combined_overflow)
 

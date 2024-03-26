@@ -70,7 +70,7 @@ get_columns_for_site <- function(mapfile, site_number) {
   return(file_names)
 }
 
-#  find the number of chemicals that were found at each site from 1 to 28 
+#  find the chemicals and number of chemicals that were found at each site from 1 to 28 
 counters <- numeric(28)
 site_data_frames <- list()
 
@@ -92,116 +92,68 @@ for(site in 1:28) {
   site_data_frames[[paste0("found_site_", site)]] <- site_data
 }
 
-#BEGINNING OF SECTION INTERSECTION
-
-# Find the common chemical IDs between the two sites
-# BEGINNING OF Site 27
-common_rows_list <- list()
-
-# Loop through sites 1 to 4 (extend this range as needed)
-for(site in 1:5) {
-  # Calculate the intersecting chemical IDs between the current site and site 27
-  common_chemical_ids <- intersect(site_data_frames[[paste0("found_site_", site)]][["chemical_ID"]],
-                                   site_data_frames[["found_site_27"]][["chemical_ID"]])
-  
-  # Subset the site 27 data frame for rows with the common chemical IDs
-  common_rows <- site_data_frames[["found_site_27"]][site_data_frames[["found_site_27"]][["chemical_ID"]] %in% common_chemical_ids, ]
-  
-  # Store the result in the list using the site number as the name
-  common_rows_list[[paste0("site_", site, "_and_27")]] <- common_rows
+#BEGINNING OF SECTION LINEAR CORRELATION BETWEEN SITES 
+sites_15 <- c(16)
+results_for_site_15 <- list() 
+for (site in sites_15) {
+  for (time in c("A", "B", "C")) {
+    current_file_name <- mapfile2 %>%
+      filter(Sample_site == site_str, Sample_time == time) %>%
+      pull(File.Name)
+    
+    file_name_15 <- mapfile2 %>%
+      filter(Sample_site == "15", Sample_time == time) %>%
+      pull(File.Name)
+    
+    r_value <- cor(filtered_feature_table[[current_file_name]], filtered_feature_table[[file_name_15]])
+    results_for_site_15[[paste("Site", site, "vs 15 at time", time)]] <- r_value
+  }
 }
 
-for(site in 7:14) {
-  # Calculate the intersecting chemical IDs between the current site and site 27
-  common_chemical_ids <- intersect(site_data_frames[[paste0("found_site_", site)]][["chemical_ID"]],
-                                   site_data_frames[["found_site_27"]][["chemical_ID"]])
-  
-  # Subset the site 27 data frame for rows with the common chemical IDs
-  common_rows <- site_data_frames[["found_site_27"]][site_data_frames[["found_site_27"]][["chemical_ID"]] %in% common_chemical_ids, ]
-  
-  # Store the result in the list using the site number as the name
-  common_rows_list[[paste0("site_", site, "_and_27")]] <- common_rows
+sites_21 <- c(18, 20, 22:24)
+results_for_site_21 <- list() 
+for (site in sites_21) {
+  if (site == 20) {
+    time_points <- c("A", "B")
+  } else {
+    time_points <- c("A", "B", "C")
+  }
+  site_str <- as.character(site)
+  for (time in time_points) {
+    current_file_name <- mapfile2 %>%
+    filter(Sample_site == site_str, Sample_time == time) %>%
+    pull(File.Name) 
+      file_name_21 <- mapfile2 %>%
+        filter(Sample_site == "21", Sample_time == time) %>%
+        pull(File.Name)
+      r_value <- cor(filtered_feature_table[[current_file_name]], filtered_feature_table[[file_name_21]])
+      results_for_site_21[[paste("Site", site, "vs. 21 at time", time)]] <- r_value
+    }
+  }
+
+
+sites_27 <- c(1:5, 7:14, 25, 26, 28)
+results_for_site_27 <- list() 
+for (site in sites_27) {
+  site_str <- ifelse(site < 10, paste0("0", site), as.character(site))
+  for (time in c("A", "B", "C")) {
+    current_file_name <- mapfile2 %>%
+      filter(Sample_site == site_str, Sample_time == time) %>%
+      pull(File.Name)
+    
+    file_name_27 <- mapfile2 %>%
+      filter(Sample_site == "27", Sample_time == time) %>%
+      pull(File.Name)
+    
+    r_value <- cor(filtered_feature_table[[current_file_name]], filtered_feature_table[[file_name_27]])
+    results_for_site_27[[paste("Site", site, "vs 27 at time", time)]] <- r_value
+  }
 }
 
-for(site in 25:26) {
-  # Calculate the intersecting chemical IDs between the current site and site 27
-  common_chemical_ids <- intersect(site_data_frames[[paste0("found_site_", site)]][["chemical_ID"]],
-                                   site_data_frames[["found_site_27"]][["chemical_ID"]])
-  
-  # Subset the site 27 data frame for rows with the common chemical IDs
-  common_rows <- site_data_frames[["found_site_27"]][site_data_frames[["found_site_27"]][["chemical_ID"]] %in% common_chemical_ids, ]
-  
-  # Store the result in the list using the site number as the name
-  common_rows_list[[paste0("site_", site, "_and_27")]] <- common_rows
-}
-
-for(site in 28) {
-  # Calculate the intersecting chemical IDs between the current site and site 27
-  common_chemical_ids <- intersect(site_data_frames[[paste0("found_site_", site)]][["chemical_ID"]],
-                                   site_data_frames[["found_site_27"]][["chemical_ID"]])
-  
-  # Subset the site 27 data frame for rows with the common chemical IDs
-  common_rows <- site_data_frames[["found_site_27"]][site_data_frames[["found_site_27"]][["chemical_ID"]] %in% common_chemical_ids, ]
-  
-  # Store the result in the list using the site number as the name
-  common_rows_list[[paste0("site_", site, "_and_27")]] <- common_rows
-}
-# END OF Site 27
-
-# BEGINNING OF Site 15
-
-for(site in 16) {
-  # Calculate the intersecting chemical IDs between the current site and site 16
-  common_chemical_ids <- intersect(site_data_frames[[paste0("found_site_", site)]][["chemical_ID"]],
-                                   site_data_frames[["found_site_15"]][["chemical_ID"]])
-  
-  # Subset the site 15 data frame for rows with the common chemical IDs
-  common_rows <- site_data_frames[["found_site_15"]][site_data_frames[["found_site_15"]][["chemical_ID"]] %in% common_chemical_ids, ]
-  
-  # Store the result in the list using the site number as the name
-  common_rows_list[[paste0("site_", site, "_and_15")]] <- common_rows
-}
-#END OF Site 15
 
 
-#BEGINNING OF Site 21
-for(site in 18) {
-  # Calculate the intersecting chemical IDs between the current site and site 21
-  common_chemical_ids <- intersect(site_data_frames[[paste0("found_site_", site)]][["chemical_ID"]],
-                                   site_data_frames[["found_site_21"]][["chemical_ID"]])
-  
-  # Subset the site 21 data frame for rows with the common chemical IDs
-  common_rows <- site_data_frames[["found_site_21"]][site_data_frames[["found_site_21"]][["chemical_ID"]] %in% common_chemical_ids, ]
-  
-  # Store the result in the list using the site number as the name
-  common_rows_list[[paste0("site_", site, "_and_21")]] <- common_rows
-}
 
-for(site in 20) {
-  # Calculate the intersecting chemical IDs between the current site and site 21
-  common_chemical_ids <- intersect(site_data_frames[[paste0("found_site_", site)]][["chemical_ID"]],
-                                   site_data_frames[["found_site_21"]][["chemical_ID"]])
-  
-  # Subset the site 21 data frame for rows with the common chemical IDs
-  common_rows <- site_data_frames[["found_site_21"]][site_data_frames[["found_site_21"]][["chemical_ID"]] %in% common_chemical_ids, ]
-  
-  # Store the result in the list using the site number as the name
-  common_rows_list[[paste0("site_", site, "_and_21")]] <- common_rows
-}
-
-for(site in 22:24) {
-  # Calculate the intersecting chemical IDs between the current site and site 21
-  common_chemical_ids <- intersect(site_data_frames[[paste0("found_site_", site)]][["chemical_ID"]],
-                                   site_data_frames[["found_site_21"]][["chemical_ID"]])
-  
-  # Subset the site 21 data frame for rows with the common chemical IDs
-  common_rows <- site_data_frames[["found_site_21"]][site_data_frames[["found_site_21"]][["chemical_ID"]] %in% common_chemical_ids, ]
-  
-  # Store the result in the list using the site number as the name
-  common_rows_list[[paste0("site_", site, "_and_21")]] <- common_rows
-}
-
-# END OF SECTION INTERSECTION
+#END OF SECTION LIENAR CORRELATION BETWEEN SITES
 
 
 

@@ -79,20 +79,20 @@ for(site in 1:28) {
   site_files <- get_columns_for_site(mapfile2, site)
   
   # Determine the column names in modified_filtered_feature_table that match the site files
-  site_cols <- which(colnames(modified_filtered_feature_table) %in% site_files)
+  site_cols <- which(colnames(mfiltered_feature_table) %in% site_files)
   
   # Apply a function across the rows to check for any non-zero values in the site's columns
   # and sum these to count the number of non-zero rows for the site
-  counters[site] <- sum(apply(modified_filtered_feature_table[site_cols], 1, function(row) any(row != 0)))
+  counters[site] <- sum(apply(filtered_feature_table[site_cols], 1, function(row) any(row != 0)))
   
   # Subset the data for rows where any column for the site has a non-zero value
-  site_data <- modified_filtered_feature_table[apply(modified_filtered_feature_table[site_cols], 1, function(row) any(row != 0)), ]
+  site_data <- filtered_feature_table[apply(filtered_feature_table[site_cols], 1, function(row) any(row != 0)), ]
   
   # Store the subsetted data frame in the list with a name
   site_data_frames[[paste0("found_site_", site)]] <- site_data
 }
 
-#BEGINNING OF SECTION LINEAR CORRELATION BETWEEN SITES 
+#BEGINNING OF SUBSECTION LINEAR CORRELATION BETWEEN SITES 
 sites_15 <- c(16)
 results_for_site_15 <- list() 
 for (site in sites_15) {
@@ -153,10 +153,9 @@ for (site in sites_27) {
 
 
 
-#END OF SECTION LIENAR CORRELATION BETWEEN SITES
+#END OF SUBSECTION LIENAR CORRELATION BETWEEN SITES
 
-
-
+#BEGINNING OF SUBSECTION CREATING BAR GRAPHS COMPARING SITES AND WQTC SITES
 # table containing the site number and corresponding number of chemical compounds 
 counters_df <- data.frame(Site = 1:28, Count = counters)
 
@@ -199,10 +198,11 @@ ggplot(counters_df, aes(x = Group, y = Count, fill = Color, group = Site)) +
   scale_fill_manual(values = c("Standard" = "blue", "Special" = "orange")) +
   scale_x_discrete(limits = c("Group 1", "Group 2", "Group 3"))
 
-# end of SECTION 1 
+#END OF SUBSECTION CREATING BAR GRAPHS COMPARING SITES AND WQTC SITES
+# END of SECTION 1 
 
 
-# beginning of SECTION 2
+# BEGINNING of SECTION 2
 
 # function to filter out columns by sample time (A,B,C) and append ".mzXML" to columns 
 # Initial setup: Extracting sample time IDs
@@ -304,17 +304,17 @@ create_manhattan_plot_feature_id(results_df)
 create_manhattan_plot_mz(results_df)
 create_manhattan_plot_rt(results_df)
 
-# End of SECTION 2
+# END of SECTION 2
 
 
-#Beginning of SECTION 3
-#PART 1: SCATTERPLOTS FOR INCOME, POPULATION, AND AREA
+#BEGINNING of SECTION 3
+#SUBSECTION 1 of SECTION 3: SCATTERPLOTS FOR INCOME, POPULATION, AND AREA
 incomes <- c(0,34490, 36812, 37059, 40168, 31050, 27752, 27517, 65791, 56672, 27517, 74500, 101140, 86478, 81994, 108021, 55433, 76796, 72401, 55346, 61923, 45794, 53857, 61081, 28054, 52751, 20000)
 population <- c(0, 8258, 3459, 1610, 3587, 10949, 9073, 23751, 145346, 8838, 23751, 95603, 11444, 40824, 5781, 37193, 78206, 60885, 24969, 309998, 45148, 37972, 23135, 309184, 41777, 350766, 74)
 area <- c(0.04, 4, 1, 1, 3, 5, 5, 12, 112, 3, 12, 80, 12, 67, 11, 88, 55, 80, 23, 332, 37, 28, 21, 242, 20, 280, 3)
 
-#creating the data table from the paper
-mod_counters_df <- counters_df[-6, ]
+#creating the data table from the paper provided by Dr. Walker
+mod_counters_df <- counters_df[-6, ] #Remove site 6 because it was a blank in the paper provided by Dr. Walker
 mod_counters_df$Income <- incomes
 mod_counters_df$Population <- population
 mod_counters_df$Area <- area
@@ -363,7 +363,7 @@ plot_regression(mod_counters_df, "Population", "Count", population_model)
 area_model <- lm(Count ~ Area, data = mod_counters_df)
 plot_regression(mod_counters_df, "Area", "Count", area_model)
 
-#PART 2: BOXPLOTS
+#SUBSECTION 2 OF SECTION 3: BOXPLOTS
 
 #Working with nested sewersheds vs. treatment plants
 count_sewer <- c(counters_df[1:5, "Count"], counters_df[7:14, "Count"], counters_df[16, "Count"], counters_df[18, "Count"], counters_df[20, "Count"], counters_df[22:26, "Count"], counters_df[28, "Count"])
@@ -391,140 +391,8 @@ t_test_result_1 <- t.test(Count ~ Group, data = data_combined_overflow)
 print(t_test_result)
 print(t_test_result_1)
 
-#End of SECTION 3
+#END of SECTION 3
 
-
-#Beginning of SECTION 4
-
-# function to create tables containing rows with p-value less than 0.05 
-filter_by_p_value <- function(data, p_value_col_index) {
-  filtered_data <- subset(data, data[p_value_col_index] < 0.05)
-  if (p_value_col_index == 28) { 
-    filtered_data <- filtered_data[, -c(31:36)]
-  }
-  else if (p_value_col_index == 31) { 
-    filtered_data <- filtered_data[, -c(28:30, 34:36)]
-  }
-  else {
-    filtered_data <- filtered_data[, -c(28:33)]
-  }
-  return(filtered_data)
-}
-plot_A_significant <- filter_by_p_value(combined_feature_table, 28)
-plot_B_significant <- filter_by_p_value(combined_feature_table, 31)
-plot_C_significant <- filter_by_p_value(combined_feature_table, 34)
-
-# order and sort function that will be used to filter the 10 chemicals with lowest p-values 
-order_and_sort <- function(data, col_name, num) {
-  data1 <- data.frame(data)
-  data1_mod1 <- data1[order(data1[[col_name]]),]
-  data1_mod2 <- data1_mod1[1:num, ]
-  return(data1_mod2)
-}
-
-# Extract chemical_IDs from each table
-chemical_ids_A <- plot_A_significant$chemical_ID
-chemical_ids_B <- plot_B_significant$chemical_ID
-chemical_ids_C <- plot_C_significant$chemical_ID
-
-# Find intersection between A and B, B and C, A and C
-only_A = setdiff(chemical_ids_A, union(chemical_ids_B, chemical_ids_C))
-only_B = setdiff(chemical_ids_B, union(chemical_ids_A, chemical_ids_C))
-only_C = setdiff(chemical_ids_C, union(chemical_ids_A, chemical_ids_B))
-intersection_AB_all = intersect(chemical_ids_A, chemical_ids_B)
-intersection_BC_all = intersect(chemical_ids_B, chemical_ids_C)
-intersection_AC_all = intersect(chemical_ids_A, chemical_ids_C)
-common_intersection_ABC = intersect(intersect(intersection_AB_all, intersection_BC_all), intersection_AC_all)
-intersection_AB = setdiff(intersection_AB_all, common_intersection_ABC)
-intersection_BC = setdiff(intersection_BC_all, common_intersection_ABC)
-intersection_AC = setdiff(intersection_AC_all, common_intersection_ABC)
-
-
-# Convert to a dataframe or table for viewing or analysis
-check_for_ID <- function(data, chemical_id, vec) {
-  data1 <- data.frame(data)
-  data_filtered <- data1[data1[[chemical_id]] %in% vec, ]
-  return(data_filtered)
-}
-
-# converting the data into data frames
-plot_A_significant_unique <- plot_A_significant
-plot_B_significant_unique <- plot_B_significant
-plot_C_significant_unique <- plot_C_significant
-only_A_df <- check_for_ID(plot_A_significant_unique, "chemical_ID", only_A)
-only_B_df <- check_for_ID(plot_B_significant_unique, "chemical_ID", only_B)
-only_C_df <- check_for_ID(plot_C_significant_unique, "chemical_ID", only_C)
-intersection_AB_df <- check_for_ID(plot_A_significant_unique, "chemical_ID", intersection_AB)
-intersection_BC_df <- check_for_ID(plot_B_significant_unique, "chemical_ID", intersection_BC)
-intersection_AC_df <- check_for_ID(plot_C_significant_unique, "chemical_ID", intersection_AC)
-common_intersection_A_ABC_df <-  check_for_ID(plot_A_significant_unique, "chemical_ID", common_intersection_ABC)
-common_intersection_B_ABC_df <-  check_for_ID(plot_B_significant_unique, "chemical_ID", common_intersection_ABC)
-common_intersection_C_ABC_df <-  check_for_ID(plot_C_significant_unique, "chemical_ID", common_intersection_ABC)
-
-# extracting the top 10 chemicals for each sample site based on p-value
-only_A_df_2 <- order_and_sort(only_A_df, "PValue_A", 10)
-only_A_df_top10 <- only_A_df_2 %>%
-  select(chemical_ID, Name, Formula, Adduct, mz_1, time_2, PValue_A, AdjustedR2_A, Slope_A)
-only_B_df_2 <- order_and_sort(only_B_df, "PValue_B", 10)
-only_B_df_top10 <- only_B_df_2 %>%
-  select(chemical_ID, Name, Formula, Adduct, mz_1, time_2, PValue_B, AdjustedR2_B, Slope_B)
-only_C_df_2 <- order_and_sort(only_C_df, "PValue_C", 10)
-only_C_df_top10 <- only_C_df_2 %>%
-  select(chemical_ID, Name, Formula, Adduct, mz_1, time_2, PValue_C, AdjustedR2_C, Slope_C)
-
-# extracting top 5 chemicals from each sample site for samples found in all sample sites. 
-intersect_A_ABC <- order_and_sort(common_intersection_A_ABC_df, "PValue_A", 5)
-intersect_A_ABC_top5 <- intersect_A_ABC %>%
-  select(chemical_ID, Name, Formula, Adduct, mz_1, time_2, PValue_A, AdjustedR2_A, Slope_A)
-intersect_B_ABC <- order_and_sort(common_intersection_B_ABC_df, "PValue_B", 5)
-intersect_B_ABC_top5 <- intersect_B_ABC %>%
-  select(chemical_ID, Name, Formula, Adduct, mz_1, time_2, PValue_B, AdjustedR2_B, Slope_B)
-intersect_C_ABC <- order_and_sort(common_intersection_C_ABC_df, "PValue_C", 5)
-intersect_C_ABC_top5 <- intersect_C_ABC %>%
-  select(chemical_ID, Name, Formula, Adduct, mz_1, time_2, PValue_C, AdjustedR2_C, Slope_C)
-
-# reformatting the column headers for data presentation 
-intersect_A_ABC_top5 <- intersect_A_ABC %>%
-  rename(PValue = PValue_A, AdjustedR2 = AdjustedR2_A, Slope = Slope_A) %>%
-  mutate(Sample_Time = 'A') %>%
-  select(chemical_ID, Name, Formula, Adduct, mz_1, time_2, PValue, AdjustedR2, Slope, Sample_Time)
-intersect_B_ABC_top5 <- intersect_B_ABC %>%
-  rename(PValue = PValue_B, AdjustedR2 = AdjustedR2_B, Slope = Slope_B) %>%
-  mutate(Sample_Time = 'B') %>%
-  select(chemical_ID, Name, Formula, Adduct, mz_1, time_2, PValue, AdjustedR2, Slope, Sample_Time)
-intersect_C_ABC_top5 <- intersect_C_ABC %>%
-  rename(PValue = PValue_C, AdjustedR2 = AdjustedR2_C, Slope = Slope_C) %>%
-  mutate(Sample_Time = 'C') %>%
-  select(chemical_ID, Name, Formula, Adduct, mz_1, time_2, PValue, AdjustedR2, Slope, Sample_Time)
-
-combined_df <- bind_rows(intersect_A_ABC_top5, intersect_B_ABC_top5, intersect_C_ABC_top5)
-
-
-# Create a list of these sets
-list_of_ids <- list(A = chemical_ids_A, B = chemical_ids_B, C = chemical_ids_C)
-
-# Generate Venn Diagram
-venn.plot <- venn.diagram(
-  x = list_of_ids,
-  category.names = c("Total Number of Features For Sample Time A", "Total Number of Features For Sample Time B", "Total Number of Features For Sample Time C"),
-  fill = c("green", "purple", "orange"),
-  cex = 2.5,
-  cat.cex = 1.25,
-  cat.dist = 0.1,
-  cat.pos = c(330, 30, 180),
-  margin = 0.1,
-  filename = NULL,
-  output = TRUE
-)
-# Display the plot
-grid.newpage()
-grid.draw(venn.plot)
-
-#write.csv(counters_df, "counters_df.csv", row.names = FALSE)
-#write.csv(only_A_df_top10, "only_A_df_top10(off).csv", row.names = FALSE)
-#write.csv(only_B_df_top10, "only_B_df_top10(off2).csv", row.names = FALSE)
-#write.csv(only_C_df_top10, "only_C_df_top10(off).csv", row.names = FALSE)
-#write.csv(combined_df, "combined_df(off).csv", row.names = FALSE)
 
 
 

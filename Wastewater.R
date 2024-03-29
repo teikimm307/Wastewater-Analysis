@@ -78,8 +78,8 @@ for(site in 1:28) {
   # Get the file names for the site using the existing function
   site_files <- get_columns_for_site(mapfile2, site)
   
-  # Determine the column names in modified_filtered_feature_table that match the site files
-  site_cols <- which(colnames(mfiltered_feature_table) %in% site_files)
+  # Determine the column names in filtered_feature_table that match the site files
+  site_cols <- which(colnames(filtered_feature_table) %in% site_files) #FROM THIS POINT ONWARDS, ALL MENTIONS OF FILTERED FEATURE TABLE CAN BE CONVERTED TO MODIFIED FILTERED FEATURE TABLE IF NEEDED
   
   # Apply a function across the rows to check for any non-zero values in the site's columns
   # and sum these to count the number of non-zero rows for the site
@@ -88,15 +88,64 @@ for(site in 1:28) {
   # Subset the data for rows where any column for the site has a non-zero value
   site_data <- filtered_feature_table[apply(filtered_feature_table[site_cols], 1, function(row) any(row != 0)), ]
   
-  # Store the subsetted data frame in the list with a name
+  # Store the subseted data frame in the list with a name
   site_data_frames[[paste0("found_site_", site)]] <- site_data
 }
 
+#BEGINNING OF SUBSECTION FOR SITE NUMBER AND SAMPLETIME
+get_columns_for_site_and_time <- function(mapfile, site_number, sample_time) {
+  if(site_number < 10) {
+    site_number <- paste0("0", site_number)
+  }
+  file_names <- mapfile$File.Name[mapfile$Sample_site == site_number & mapfile$Sample_time == sample_time]
+  return(file_names)
+}
+
+#  Find the chemicals and number of chemicals that were found at each site from 1 to 28 
+site_and_time_data_frames <- list()
+
+for(site in 1:28) {
+  if (site == 20) {
+    time_points <- c("A", "B")
+  } 
+  else {
+    time_points <- c("A", "B", "C")
+  }
+  for(time in time_points) {
+      # Get the file names for the site and timepoint using the existing function
+      site_files <- get_columns_for_site_and_time(mapfile2, site, time)
+      
+      # Determine the column names in filtered_feature_table that match the site files
+      site_cols <- which(colnames(filtered_feature_table) %in% site_files)
+      
+      # Subset the data for rows where any column for the site has a non-zero value
+      site_data <- filtered_feature_table[apply(filtered_feature_table[site_cols], 1, function(row) any(row != 0)), ]
+      
+      # Store the subseted data frame in the list with a name
+      site_and_time_data_frames[[paste0("found_site_", site, "_and_time_", time)]] <- site_data
+    }
+}
+#END OF SUBSECTION FOR SITE NUMBER AND SAMPLETIME
+
 #BEGINNING OF SUBSECTION LINEAR CORRELATION BETWEEN SITES 
+percent_match <- function(data, filename1, filename2, colname) {
+  data_current <- data[[filename1]]
+  data_compare <- data[[filename2]]
+  
+  id_current <- data_current[[colname]]
+  id_compare <- data_compare[[colname]] 
+  match <- sum(id_current %in% id_compare)
+  percentage <- (match/length(id_compare))*100
+  return(percentage)
+}
+
+
 sites_15 <- c(16)
 results_for_site_15 <- list() 
-for (site in sites_15) {
+percentage_match_site_15 <- list()
+for (site_number in sites_15) {
   for (time in c("A", "B", "C")) {
+    site_str <- as.character(site_number)
     current_file_name <- mapfile2 %>%
       filter(Sample_site == site_str, Sample_time == time) %>%
       pull(File.Name)
@@ -106,19 +155,23 @@ for (site in sites_15) {
       pull(File.Name)
     
     r_value <- cor(filtered_feature_table[[current_file_name]], filtered_feature_table[[file_name_15]])
-    results_for_site_15[[paste("Site", site, "vs 15 at time", time)]] <- r_value
+    results_for_site_15[[paste("Site", site_number, "vs 15 at time", time)]] <- r_value
+    
+   percentage_key <- paste("Site", site_number, "vs 15 at time", time, "% Match")
+   percentage_match_site_15[[percentage_key]] <- percent_match(site_and_time_data_frames, paste0("found_site_", site_number, "_and_time_", time), paste0("found_site_15_and_time_", time), "chemical_ID")
   }
 }
 
 sites_21 <- c(18, 20, 22:24)
 results_for_site_21 <- list() 
-for (site in sites_21) {
-  if (site == 20) {
+percentage_match_site_21 <- list()
+for (site_number in sites_21) {
+  if (site_number == 20) {
     time_points <- c("A", "B")
   } else {
     time_points <- c("A", "B", "C")
   }
-  site_str <- as.character(site)
+  site_str <- as.character(site_number)
   for (time in time_points) {
     current_file_name <- mapfile2 %>%
     filter(Sample_site == site_str, Sample_time == time) %>%
@@ -128,14 +181,23 @@ for (site in sites_21) {
         pull(File.Name)
       r_value <- cor(filtered_feature_table[[current_file_name]], filtered_feature_table[[file_name_21]])
       results_for_site_21[[paste("Site", site, "vs. 21 at time", time)]] <- r_value
+      
+      percentage_key <- paste("Site", site_number, "vs 21 at time", time, "% Match")
+      percentage_match_site_21[[percentage_key]] <- percent_match(site_and_time_data_frames, paste0("found_site_", site_number, "_and_time_", time), paste0("found_site_21_and_time_", time), "chemical_ID")
     }
   }
 
 
 sites_27 <- c(1:5, 7:14, 25, 26, 28)
+percentage_match_site_27 <- list()
 results_for_site_27 <- list() 
-for (site in sites_27) {
-  site_str <- ifelse(site < 10, paste0("0", site), as.character(site))
+for (site_number in sites_27) {
+  if (site_number < 10) {
+    site_str <- paste0("0", site_number)
+  }
+  else {
+    site_str <- as.character(site_number)
+  }
   for (time in c("A", "B", "C")) {
     current_file_name <- mapfile2 %>%
       filter(Sample_site == site_str, Sample_time == time) %>%
@@ -146,12 +208,12 @@ for (site in sites_27) {
       pull(File.Name)
     
     r_value <- cor(filtered_feature_table[[current_file_name]], filtered_feature_table[[file_name_27]])
-    results_for_site_27[[paste("Site", site, "vs 27 at time", time)]] <- r_value
+    results_for_site_27[[paste("Site", site_number, "vs 27 at time", time)]] <- r_value
+    
+    percentage_key <- paste("Site", site_number, "vs 27 at time", time, "% Match")
+    percentage_match_site_27[[percentage_key]] <- percent_match(site_and_time_data_frames, paste0("found_site_", site_number, "_and_time_", time), paste0("found_site_27_and_time_", time), "chemical_ID")
   }
 }
-
-
-
 
 #END OF SUBSECTION LIENAR CORRELATION BETWEEN SITES
 
@@ -167,25 +229,22 @@ ggplot(counters_df, aes(x = Site, y = Count)) +
   theme(text = element_text(family = "Times New Roman"), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=0.5), plot.title = element_text(hjust = 0.5)) +
   scale_x_continuous(breaks = seq(0, 30, by=5), limits = c(0,30))
 
-
 #modified bar graph that groups bars together based on what site they converge to
 site_order <- c(
-  as.character(1:5), as.character(7:14), as.character(25:26), "28", "27", # Group 1 with 27 last
-  "16", "15",                                                             # Group 2 with 15 last
-  "20", as.character(22:24), "21", "6"                                    # Group 3 with 21 last
+  "16", "15",                                                             
+  "18", "20", as.character(22:24), "21", "6",
+  as.character(1:5), as.character(7:14), as.character(25:26), "28", "27"
 )
 
 # Set the levels of the Site factor according to the custom order
 counters_df$Site <- factor(counters_df$Site, levels = site_order)
 
-counters_df$Group <- ifelse(counters_df$Site %in% c(1:5, 7:14, 25:26, 28, 27), "Group 1",
-                            ifelse(counters_df$Site %in% c(15,16), "Group 2",
-                                   ifelse(counters_df$Site %in% c(20, 22:24, 21), "Group 3", NA)))
+counters_df$Group <- ifelse(counters_df$Site %in% c(1:5, 7:14, 25:26, 28, 27), "Site 27",
+                            ifelse(counters_df$Site %in% c(15,16), "Site 15",
+                                   ifelse(counters_df$Site %in% c(18, 20, 22:24, 21), "Site 21", NA)))
 
 # Define a new column for color (factor variable for differentiating specific bars)
-counters_df$Color <- ifelse(counters_df$Site == 27, "Special",
-                            ifelse(counters_df$Site == 15, "Special",
-                                   ifelse(counters_df$Site == 21, "Special", "Standard")))
+counters_df$Color <- ifelse(counters_df$Site %in% c(15, 21, 27), "WQTC", "Nested")
 
 # Plotting the bar graph
 ggplot(counters_df, aes(x = Group, y = Count, fill = Color, group = Site)) +
@@ -195,8 +254,8 @@ ggplot(counters_df, aes(x = Group, y = Count, fill = Color, group = Site)) +
   theme(text = element_text(family = "Times New Roman"),
         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=0.5),
         plot.title = element_text(hjust = 0.5)) +
-  scale_fill_manual(values = c("Standard" = "blue", "Special" = "orange")) +
-  scale_x_discrete(limits = c("Group 1", "Group 2", "Group 3"))
+  scale_fill_manual(values = c("Nested" = "blue", "WQTC" = "orange")) +
+  scale_x_discrete(limits = c("Site 15", "Site 21", "Site 27"))
 
 #END OF SUBSECTION CREATING BAR GRAPHS COMPARING SITES AND WQTC SITES
 # END of SECTION 1 
@@ -309,12 +368,18 @@ create_manhattan_plot_rt(results_df)
 
 #BEGINNING of SECTION 3
 #SUBSECTION 1 of SECTION 3: SCATTERPLOTS FOR INCOME, POPULATION, AND AREA
-incomes <- c(0,34490, 36812, 37059, 40168, 31050, 27752, 27517, 65791, 56672, 27517, 74500, 101140, 86478, 81994, 108021, 55433, 76796, 72401, 55346, 61923, 45794, 53857, 61081, 28054, 52751, 20000)
-population <- c(0, 8258, 3459, 1610, 3587, 10949, 9073, 23751, 145346, 8838, 23751, 95603, 11444, 40824, 5781, 37193, 78206, 60885, 24969, 309998, 45148, 37972, 23135, 309184, 41777, 350766, 74)
-area <- c(0.04, 4, 1, 1, 3, 5, 5, 12, 112, 3, 12, 80, 12, 67, 11, 88, 55, 80, 23, 332, 37, 28, 21, 242, 20, 280, 3)
+incomes_total <- c(0,34490, 36812, 37059, 40168, 31050, 27752, 27517, 65791, 56672, 27517, 74500, 101140, 86478, 81994, 108021, 55433, 76796, 72401, 55346, 61923, 45794, 53857, 61081, 28054, 52751, 20000)
+population_total <- c(0, 8258, 3459, 1610, 3587, 10949, 9073, 23751, 145346, 8838, 23751, 95603, 11444, 40824, 5781, 37193, 78206, 60885, 24969, 309998, 45148, 37972, 23135, 309184, 41777, 350766, 74)
+area_total <- c(0.04, 4, 1, 1, 3, 5, 5, 12, 112, 3, 12, 80, 12, 67, 11, 88, 55, 80, 23, 332, 37, 28, 21, 242, 20, 280, 3)
+
+incomes <- c(0,34490, 36812, 37059, 40168, 31050, 27752, 27517, 65791, 56672, 27517, 74500, 101140, 81994, 55433, 72401, 61923, 45794, 53857, 61081, 28054, 20000)
+population <- c(0, 8258, 3459, 1610, 3587, 10949, 9073, 23751, 145346, 8838, 23751, 95603, 11444, 5781, 78206, 24969, 45148, 37972, 23135, 309184, 41777, 74)
+area <- c(0.04, 4, 1, 1, 3, 5, 5, 12, 112, 3, 12, 80, 12, 11, 55, 23, 37, 28, 21, 242, 20, 3)
+
+#incomes excludes WQTC's, incomes_total WQTC's
 
 #creating the data table from the paper provided by Dr. Walker
-mod_counters_df <- counters_df[-6, ] #Remove site 6 because it was a blank in the paper provided by Dr. Walker
+mod_counters_df <- counters_df[-c(6,15,17,19,21,27), ] #Remove site 6 because it was a blank in the paper provided by Dr. Walker
 mod_counters_df$Income <- incomes
 mod_counters_df$Population <- population
 mod_counters_df$Area <- area
